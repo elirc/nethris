@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "count": 61,
+  "foundationTests": 13,
+  "httpChecks": [
+    "bootstrap is atomic, named roles are serialized, repeat setup is refused",
+    "invalid credentials and anonymous directory access are rejected",
+    "balance, salary, account and audit projections respect current roles",
+    "HR cannot grant Admin through employee fields or account routes, or edit Admin employee",
+    "directory filtering, SQL pages and bounded org traversal return real relationships",
+    "HTTP enforces operation keys, JSON shape, content type, body size, origin and host",
+    "creation receipts replay exactly and reject key reuse or case-insensitive duplicates",
+    "department CRUD requires versions and valid department leadership",
+    "referenced departments are protected and archives block new assignments",
+    "job-role CRUD preserves exact cents and validates salary bands",
+    "employee CRUD rejects duplicate identity, cycles and referenced deletion",
+    "account provisioning is separate, unique, password-bounded and follows employee email edits",
+    "Admin password reset revokes existing sessions; ordinary employees cannot edit directory data",
+    "PTO rejects original 9999-hour defect, fractional units, past and overlong dates",
+    "PTO reserves balance, rejects overlap and hides another employee request",
+    "pending edits work; self, skipped-stage, enum and repeated-review guards hold",
+    "HR approval inserts history and deducts once; exact retry preserves balance",
+    "HR stage requires a distinct reviewer; no-manager requests start at HR without self approval",
+    "cancellation preserves decisions, releases dates, and undecided deletion works",
+    "multiple pending requests cannot over-reserve remaining balance",
+    "concurrent create retries produce one request and competing decisions have one winner",
+    "PTO and audit ordering execute successfully in real SQLite HTTP reads",
+    "late receipt failure rolls back earlier domain SaveChanges and audit writes",
+    "last active Admin cannot be demoted or deactivated",
+    "existing JWT observes current role and account deactivation immediately",
+    "authorization is rechecked before replaying a receipt",
+    "manager reassignment removes old request visibility and blocks old decision replay",
+    "logout revokes the server session"
+  ],
+  "browserChecks": [
+    "workshop bootstrap through labeled forms creates a real directory",
+    "rejected API login stays rejected without demo fallback",
+    "stale edit shows current values and preserves the draft for explicit review",
+    "department deletion uses an explicit confirmation and refreshes saved records",
+    "lost response after commit recovers through an exact browser retry without duplication",
+    "job-role forms create, edit and delete exact salary bands",
+    "employee editor performs real create, edit and unreferenced delete",
+    "Admin account editor changes and restores a real account role",
+    "self password reset returns to sign-in after the server revokes the session",
+    "organization view renders saved reporting relationships",
+    "employee UI hides management controls and private colleague values",
+    "employee edit, manager review and HR finalization update real history and balance",
+    "requester cancellation is visible and preserves the request record",
+    "desktop and narrow layouts fit the viewport and show real records",
+    "browser sign-out waits for server revocation",
+    "a delayed refresh cannot restore a signed-out session or cached private views",
+    "acceptance workflows produce no uncaught browser errors"
+  ],
+  "packageChecks": [
+    "locked restores and package build pass",
+    "published browser assets exactly match the final client build",
+    "package contains no private database and matches the published API assembly"
+  ],
+  "dependencyAdvisories": {
+    "npm": 0,
+    "nuget": 0
+  },
+  "originalFilesPreserved": 75,
+  "historicalPagesMarked": 46,
+  "imagesReviewed": {
+    "reviewed": true,
+    "run": "browser-03",
+    "notes": "Viewed desktop screenshot and original-resolution narrow screenshot. Directory text, actions, navigation and six real fixture records are readable; the narrow layout fits without horizontal overflow.",
+    "sha256": {
+      "desktop.png": "d357a370577fb6f34895f745bb3479bcff8a1a303a972ec035dea7d6e4e74fd6",
+      "narrow.png": "04d2459f497780bea8b283696d7e523d3f53b20a8bf3e355156014e6080bfb80"
+    }
+  },
+  "limits": [
+    "Loopback-only single-organization SQLite learning application; no production hosting, payroll, external HR service, notification delivery, account recovery or production abuse-control system.",
+    "PTO uses calendar dates including weekends, quarter-hour amounts, at most eight hours per date and an inclusive span of at most 31 dates. This is simplified workshop policy.",
+    "Approved PTO is immutable: no approved cancellation/refund. Pending requests can be edited/deleted only before decisions; cancellation retains history. Manager reassignment requires cancellation/resubmission when captured and current managers differ.",
+    "Limits: 2,000 employees, 200 departments, 200 job roles, 10,000 PTO requests and 32 manager levels. Selectors load bounded reference lists; SQLite NOCASE indexes use SQLite collation semantics.",
+    "Browser sessions and pending operation snapshots stay in memory; reload requires login and loses the browser retry snapshot. Server sessions last eight hours; CRUD receipts last 24 hours. Setup/login/logout are outside the receipt protocol.",
+    "Admin account provisioning and password reset are implemented; self-service password change, recovery and federated identity are exercises or out of scope.",
+    "Unknown database files are refused. There is no automatic migration or reset of original data; schema changes require a new learning path or a separately reviewed migration.",
+    "Original files and historical course pages are preserved and labeled. Proposed exercises are not counted as implemented functionality; focused browser checks are not an exhaustive accessibility or security audit.",
+    "One synthetic temporary SQLite file from an earlier failed cleanup remains outside the project because automatic approval review blocked its removal. Cleanup of an older generated browser bundle was also blocked, so verification used a fresh package folder and preserved the earlier build. The harness connection-lifetime bug was corrected; see checks/nethris/cleanup-limitation.json in the central audit workspace."
+  ],
+  "commands": [
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1",
+    "dotnet test tests/Nethris.Tests/Nethris.Tests.csproj --no-restore",
+    "python scripts/check_api.py",
+    "python scripts/check_browser.py"
+  ],
+  "notes": [
+    "Scenario groups contain multiple assertions; repetitions are not added to the distinct count.",
+    "All runtime checks used fresh temporary databases and owned local servers; original databases were not opened."
+  ]
+}

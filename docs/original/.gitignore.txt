@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+.vscode/
+node_modules/
+dist/
+coverage/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+

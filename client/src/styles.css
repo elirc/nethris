@@ -1,0 +1,655 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #173331;
+  background: #f5f8f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #173331;
+  --muted: #5f7470;
+  --line: #d9e4e1;
+  --panel: #ffffff;
+  --soft: #edf5f3;
+  --accent: #087b72;
+  --accent-strong: #06665f;
+  --danger: #bd2b3a;
+  --warning: #986900;
+  --success: #18744b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.appShell {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100vh;
+  padding: 22px;
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  background: linear-gradient(135deg, #087b72, #17a18c);
+}
+
+.brand strong,
+.sessionCard strong {
+  display: block;
+}
+
+.brand span,
+.sessionCard span,
+small,
+.eyebrow {
+  color: var(--muted);
+}
+
+.navList {
+  display: grid;
+  gap: 8px;
+}
+
+.navButton,
+.ghostButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.navButton:hover,
+.navButton.active,
+.ghostButton:hover {
+  background: var(--soft);
+}
+
+.navButton.active {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.sessionCard {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ghostButton {
+  justify-content: center;
+  border: 1px solid var(--line);
+}
+
+.main {
+  min-width: 0;
+  padding: 28px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.topbar h1,
+.loginPanel h1,
+.sectionHeader h2,
+.profilePanel h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.topbar h1 {
+  font-size: 32px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  gap: 10px;
+}
+
+.metric {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.metric strong {
+  display: block;
+  font-size: 22px;
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.panel {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.directoryLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 190px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchBox svg {
+  position: absolute;
+  left: 12px;
+  color: var(--muted);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.searchBox input {
+  padding-left: 38px;
+}
+
+.employeeList {
+  display: grid;
+  gap: 8px;
+}
+
+.employeeRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: #ffffff;
+  text-align: left;
+}
+
+.employeeRow:hover,
+.employeeRow.selected {
+  border-color: #9bd5cc;
+  background: #f3fbf9;
+}
+
+.employeeRow span,
+.orgPerson span,
+.requestTopline span,
+.auditItem span {
+  min-width: 0;
+}
+
+.employeeRow strong,
+.employeeRow small,
+.orgPerson strong,
+.orgPerson small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employeeRow em {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: #075c55;
+  font-size: 13px;
+  font-weight: 800;
+  background: #dff4ef;
+}
+
+.avatar.large {
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
+}
+
+.profilePanel {
+  position: sticky;
+  top: 28px;
+}
+
+.profilePanel p,
+.sectionHeader p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.profileFacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.fact {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f6f9f8;
+}
+
+.fact span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fact strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.reportList {
+  display: grid;
+  gap: 8px;
+}
+
+.reportList span {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.orgForest {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.orgNode {
+  display: grid;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.orgPerson {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 320px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.orgReports {
+  display: flex;
+  gap: 14px;
+  margin-left: 22px;
+  padding-left: 18px;
+  border-left: 2px solid #b7ddd7;
+}
+
+.ptoGrid {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formGrid label,
+.loginForm label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.formGrid .wide,
+.formGrid button {
+  grid-column: 1 / -1;
+}
+
+.primaryButton,
+.approveButton,
+.rejectButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 14px;
+  color: #ffffff;
+  background: var(--accent);
+  font-weight: 800;
+}
+
+.primaryButton:hover,
+.approveButton:hover {
+  background: var(--accent-strong);
+}
+
+.requestList,
+.approvalList,
+.auditList {
+  display: grid;
+  gap: 10px;
+}
+
+.requestItem,
+.approvalItem,
+.auditItem {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.requestTopline,
+.approvalItem,
+.auditItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.requestTopline strong,
+.requestTopline small {
+  display: block;
+}
+
+.requestItem p {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 4px;
+  color: var(--ink);
+}
+
+.statusPill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #eef3f2;
+}
+
+.statusPill.PendingManager,
+.statusPill.PendingHr {
+  color: var(--warning);
+  background: #fff6dd;
+}
+
+.statusPill.Approved {
+  color: var(--success);
+  background: #e7f7ee;
+}
+
+.statusPill.Rejected,
+.statusPill.Cancelled {
+  color: var(--danger);
+  background: #ffe9ec;
+}
+
+.approvalActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.rejectButton {
+  background: var(--danger);
+}
+
+.rejectButton:hover {
+  background: #9d1f2c;
+}
+
+.auditItem {
+  justify-content: flex-start;
+}
+
+.auditItem em {
+  margin-left: auto;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.loginPage {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(18, 151, 129, 0.14), transparent 30%),
+    linear-gradient(135deg, #f5f8f7, #e7f4f1);
+}
+
+.loginPanel {
+  width: min(100%, 460px);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 22px 80px rgba(23, 51, 49, 0.14);
+}
+
+.loginBrand {
+  margin-bottom: 22px;
+}
+
+.loginPanel h1 {
+  margin-bottom: 22px;
+  font-size: 30px;
+}
+
+.loginForm {
+  display: grid;
+  gap: 14px;
+}
+
+.loginHints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.loginHints span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.formError {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+@media (max-width: 1040px) {
+  .appShell,
+  .directoryLayout,
+  .ptoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .profilePanel {
+    position: static;
+    height: auto;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .navList {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding: 18px;
+  }
+
+  .topbar,
+  .requestTopline,
+  .approvalItem,
+  .auditItem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .metrics,
+  .toolbar,
+  .profileFacts,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .employeeRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .employeeRow em {
+    grid-column: 2;
+  }
+
+  .orgReports {
+    flex-direction: column;
+  }
+
+  .approvalActions {
+    width: 100%;
+  }
+
+  .approvalActions button {
+    flex: 1;
+  }
+}
+

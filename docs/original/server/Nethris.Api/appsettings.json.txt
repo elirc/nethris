@@ -1,0 +1,12 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=nethris.db"
+  },
+  "Jwt": {
+    "Issuer": "Nethris.Api",
+    "Audience": "Nethris.Client",
+    "Key": "replace-this-development-key-with-a-secret-at-least-32-chars"
+  },
+  "AllowedHosts": "*"
+}
+
