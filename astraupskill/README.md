@@ -1,5 +1,7 @@
 # Nethris: a relational CRUD workshop
 
+**Continue with the [expanded learning path](advanced/README.md): guided checkpoints, worked traces, debugging labs, independent exercises, solutions and a capstone.**
+
 Nethris is a single-organization HR information system. You will work with employees, departments, job roles, user accounts and time-off requests. This course targets a junior engineer who can write functions and wants to become comfortable owning a complete web feature: understanding existing code, designing a change, implementing it, proving its behavior and explaining its limits.
 
 Start with the [project README](../README.md) for commands. The active browser entry is [main.tsx](../client/src/main.tsx), which renders [Workshop.tsx](../client/src/Workshop.tsx). The original prototype and its historical course are preserved under [docs/original](../docs/original/README.md.txt). Read the current files when answering questions about current behavior. An old page that describes automatic demo login is historical evidence, not a setup instruction.
