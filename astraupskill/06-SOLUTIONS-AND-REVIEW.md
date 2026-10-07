@@ -45,10 +45,30 @@ Review concurrent requests separately from retries. Two different operation keys
 A strong review describes a concrete trigger and before/after behavior, identifies the authoritative permission check, explains the transaction boundary, and names the tests that prove failure behavior. It acknowledges scope limits without inventing production readiness. For a small feature, a clear paragraph plus test evidence is usually more useful than a long list of every file touched.
 
 
+## Exercise 7: stale-edit review
+
+To tell "fields the other writer changed" from "fields I changed", keep three values per field: the snapshot the editor opened with, the draft, and the latest saved row. A field conflicts only when *both* sides moved away from the snapshot. The current panel cannot make that distinction, because recovery replaces `editor.row` with `latest` (`Workshop.tsx:163`). Keep the opening snapshot in its own state. "Discard my draft" should set the draft from `latest` and clear `stale`. It should not issue a request.
+
+## Exercise 8: surviving a reload
+
+Persist the `Operation` object, which already holds the frozen body, key and ETag (`workshopApi.ts:6`, `25-26`). Never persist the token: the README's design keeps sessions in memory on purpose. `sessionStorage` matches the tab-scoped session model. After a reload the user must sign in again, so the replay happens under a new session but the same account. That works because receipts are scoped by account and key (`HrisApi.Mutations.cs:31`), not by session. Delete the stored operation on any definite response. A 409 for a changed fingerprint is a definite response too: it means the draft changed, not that the outcome is unknown.
+
+## The red-first lab: reasoned answers
+
+These were derived by reading the guards and tests on 2026-10-06, not by running the mutations. Your run is the evidence. If your result differs, trust the run and work out why.
+
+| Guard disabled | Expected red | Why |
+|---|---|---|
+| `Idempotency-Key` UUID check | `AMutationWithoutAValidIdempotencyKey_IsRejected` only | The request runs under the empty key and returns 201. The replay and key-reuse tests send valid UUIDs, so they do not notice. |
+| 428 replaced by `return 0` | `AnUpdateWithoutIfMatch_Is428` only (it now gets **409**) | Version 0 never matches a stored row (versions start at 1, `HrisDbContext.cs:112`), so `HrisRules.Version` raises a conflict. The stale test sends a well-formed tag and still gets its 409. The guard's real value is the *diagnosis*, not the refusal. |
+| `audit-logs` role minimum | `AnEmployeeCannotReadTheAuditLog` only | `AuditLogs` (`HrisApi.Reads.cs:202-210`) has no role check of its own. `MinimumRole` is the only gate. |
+| Session deletion on logout | `ASignedOutTokenIsRejectedImmediately` only | It is the only xUnit test that signs out. `check_api.py`'s "logout revokes the server session" covers the same ground over a real socket. |
+
+Every row turns exactly one test red. Each guarantee depends on a single test, which is the finding to write in your review.
+
 ## The code behind three of these answers
 
-Exercise 2's normalizer is four lines, and both of them matter (`server/Nethris.Api/Domain/HrisRules.cs`):
-
+Exercise 2's normalizer is two lines, and both of them matter (`server/Nethris.Api/Domain/HrisRules.cs:17-18`):
 ```csharp
 public static string? OptionalText(string? value, string field, int maximum = 250) =>
     string.IsNullOrWhiteSpace(value) ? null : Text(value, field, maximum);
@@ -56,15 +76,15 @@ public static string? OptionalText(string? value, string field, int maximum = 25
 
 Whitespace-only input becomes `null` rather than `" "`, so "absent" has exactly one representation in the database - which is why the suggested test "whitespace-only input becomes null" is a real test and not a formality. Everything else delegates to `Text`, so the length rule is not duplicated per field. A field added with `input.Description?.Trim()` instead would store `""` for a blank form and quietly create a second way to mean "no description".
 
-Exercise 5's precondition check is where the 428-versus-409 distinction actually lives (`server/Nethris.Api/HrisApi.cs`):
+Exercise 7's precondition check is where the 428-versus-409 distinction actually lives (`server/Nethris.Api/HrisRequest.cs:34-45`):
 
 ```csharp
-private static long Expected(HttpContext http, Guid id)
+public static long Expected(HttpContext http, Guid id)
 {
     var tag = http.Request.Headers.IfMatch.ToString();
     var prefix = $"\"{id:N}-";
-    if (tag.StartsWith(prefix, StringComparison.Ordinal) && tag.EndsWith('"')
-        && long.TryParse(tag[prefix.Length..^1], out var version) && version > 0)
+    var wellFormed = tag.StartsWith(prefix, StringComparison.Ordinal) && tag.EndsWith('"');
+    if (wellFormed && long.TryParse(tag[prefix.Length..^1], out var version) && version > 0)
     {
         return version;
     }
@@ -73,17 +93,17 @@ private static long Expected(HttpContext http, Guid id)
 }
 ```
 
-Read what it does *not* do: it never compares the version with the stored row. This method answers only "did the client state a version for *this* record, in the right form?" - a missing, malformed, or other-record ETag is a **428**, a client-shape problem. The comparison with the stored version happens later, against the loaded row, and a mismatch there is a **409**: a real conflict with another writer. Collapsing the two into one status is the most common way this contract is got wrong, and `ApiScenarioTests.AnUpdateWithoutIfMatch_Is428` and `AnUpdateWithAStaleIfMatch_Is409` exist precisely to keep them apart.
+Read what it does *not* do: it never compares the version with the stored row. This method answers only "did the client state a version for *this* record, in the right form?" - a missing, malformed, or other-record ETag is a **428**, a client-shape problem. The comparison with the stored version happens later, in `HrisRules.Version` (`Domain/HrisRules.cs:46-49`) against the loaded row, and a mismatch there is a **409**: a real conflict with another writer. Collapsing the two into one status is the most common way this contract is got wrong, and `ApiScenarioTests.AnUpdateWithoutIfMatch_Is428` and `AnUpdateWithAStaleIfMatch_Is409` exist precisely to keep them apart.
 
-Exercise 3's filter composition is the same `IQueryable` lesson the `.netzen` course makes the hard way: build one query, apply the filter, and derive **both** the total and the page from it.
+Exercise 3's filter composition follows the pattern the existing directory read already uses (`server/Nethris.Api/HrisApi.Reads.cs:87-118`): build one `query`, compose each filter into it (search at 90-95, `departmentId` at 97-105), and derive **both** the page and the total from that same variable:
 
 ```csharp
-IQueryable<Employee> query = db.Employees.AsNoTracking();
-if (status is EmploymentStatus value) query = query.Where(e => e.Status == value);
-
-var total = await query.CountAsync(ct);                 // same query...
-var items = await query.OrderBy(e => e.EmployeeNumber)  // ...as the page
-    .Skip(offset).Take(limit).Select(e => HrisPeople.View(e, actor)).ToListAsync(ct);
+var rows = await query.OrderBy(e => e.LastName).ThenBy(e => e.FirstName).ThenBy(e => e.Id)
+    .Skip(page.Offset).Take(page.Limit).ToListAsync();
+var items = rows.Select(e => HrisPeople.View(e, actor)).ToList();
+await HrisRequest.Send(http, new Page<EmployeeView>(items, await query.CountAsync(), page.Offset, page.Limit));
 ```
+
+A status filter is one more `if (...) query = query.Where(e => e.Status == value);` placed beside the `departmentId` block. Mirror that block's validation too: an unparseable value throws `HrisError.Invalid` (422) instead of being ignored. Parse with `Enum.TryParse<EmploymentStatus>(raw, ignoreCase: false, out var value) && Enum.IsDefined(value)`, because `TryParse` alone accepts numeric strings such as `"7"`.
 
 If `total` comes from a differently-filtered query, your pagination lies to the user - and nothing in a screenshot will show it.

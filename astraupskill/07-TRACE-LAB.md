@@ -17,7 +17,7 @@ Initial state: no department named Learning Lab, no receipt for operation key K,
 
 Now change only the retry's body while keeping K. Predict the result. It is a conflict because the fingerprint differs. Next, demote the HR account before the retry. The current account permission is checked before replay, so the former HR cannot use the receipt to perform the privileged operation.
 
-Find the order in [HrisApi.Handle](../server/Nethris.Api/HrisApi.cs). If the code looked up and returned receipts before authentication, what information could a caller recover after losing permission?
+Find the order yourself. `auth.Require` runs at [HrisApi.cs:62](../server/Nethris.Api/HrisApi.cs), before `Mutate` is called at line 82. The receipt lookup is inside `Mutate` at `HrisApi.Mutations.cs:31`. For PTO decisions, `Replay` (lines 71-85) also re-checks that the caller may still review that request (`RequireDecisionStillAllowed`, lines 89 onward). If the code looked up and returned receipts before authentication, what information could a caller recover after losing permission?
 
 ## Lab B — Two editors and one row
 
@@ -56,33 +56,36 @@ For each lab, finish with four sentences: what the user intended, what state the
 
 Two short excerpts make the tables above concrete.
 
-**Every request opens a transaction before it does anything else** (`server/Nethris.Api/HrisApi.cs`). This is why lab A's steps 1-4 are a single unit: there is no window in which the department row exists without its audit row and receipt.
+**Every request opens a transaction before it does anything else** (`server/Nethris.Api/HrisApi.cs:48-55`). This is why lab A's steps 1-4 are a single unit: there is no window in which the department row exists without its audit row and receipt.
 
 ```csharp
-var write = method != "GET";
-var body = write ? await Body(http.Request) : "";
+var body = route.IsWrite ? await HrisRequest.Body(http.Request) : "";
+
+// One request, one connection, one transaction: deferred for reads, immediate for writes.
 await using var db = database.Create();
 await db.Database.OpenConnectionAsync();
-await using var transaction = ((SqliteConnection)db.Database.GetDbConnection())
-    .BeginTransaction(deferred: !write);
+var connection = (SqliteConnection)db.Database.GetDbConnection();
+await using var transaction = connection.BeginTransaction(deferred: !route.IsWrite);
 await db.Database.UseTransactionAsync(transaction);
 ```
 
-`deferred: !write` is worth pausing on: a read takes a deferred transaction, which does not acquire a write lock, so concurrent readers do not block each other. Nothing commits until an explicit `transaction.CommitAsync()`, so **any** path that throws - validation, authorization, a constraint, a receipt insert - discards the whole request. Trace lab B depends on exactly that.
+`deferred: !route.IsWrite` (`IsWrite` is `Method != "GET"`, line 36) is worth pausing on: a read takes a deferred transaction, which does not acquire a write lock, so concurrent readers do not block each other. Nothing commits until an explicit `transaction.CommitAsync()` (for mutations, `HrisApi.Mutations.cs:60`), so **any** path that throws - validation, authorization, a constraint, a receipt insert - discards the whole request. Lab A's step 3 and lab B's rejected save both depend on exactly that.
 
-**The retry is recognised by a fingerprint, not just by the key**:
+**The retry is recognised by a fingerprint, not just by the key** (`server/Nethris.Api/HrisApi.Mutations.cs`; `Fingerprint` at 65-69, the lookup at 31, `Replay` at 71-76):
 
 ```csharp
-var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-    method + "\n" + http.Request.Path + "\n" + http.Request.QueryString + "\n"
-    + http.Request.Headers.IfMatch + "\n" + body)));
+var material = method + "
+" + http.Request.Path + "
+" + http.Request.QueryString + "
+" + http.Request.Headers.IfMatch + "
+" + body;
+return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material)));
 ...
 var prior = await db.Receipts.SingleOrDefaultAsync(r => r.UserAccountId == actor.UserId && r.Key == key);
-if (prior is not null)
+...
+if (prior.Fingerprint != fingerprint)
 {
-    if (prior.Fingerprint != fingerprint)
-        throw HrisError.Conflict("This operation key was already used for a different request.");
-    // ...otherwise replay the stored response
+    throw HrisError.Conflict("This operation key was already used for a different request.");
 }
 ```
 

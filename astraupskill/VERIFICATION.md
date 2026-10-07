@@ -1,6 +1,6 @@
 # Verification and practical limits
 
-This page distinguishes delivered evidence from proposed exercises. The final machine-readable result is [evidence.json](evidence.json). It records the checks used for delivery, their commands and limitations. Read that file for exact passing counts and execution dates; do not infer completion from the presence of a test script.
+This page distinguishes delivered evidence from proposed exercises. The final machine-readable result is [evidence.json](evidence.json). It records the checks used for delivery, their commands and limitations. Read that file for exact passing counts and execution dates; do not infer completion from the presence of a test script. Its `count` of 61 is the sum of four lists, not one suite: 13 `foundationTests` + 28 `httpChecks` (the `check(...)` scenario names in `scripts/check_api.py`) + 17 `browserChecks` + 3 `packageChecks`. It was recorded before the fix pass, so the 15 `ApiScenarioTests` cases are not part of it.
 
 ## What was changed
 

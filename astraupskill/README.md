@@ -15,7 +15,7 @@ Start with the [project README](../README.md) for commands. The active browser e
 | Tool | Unlocks | Needed for |
 |---|---|---|
 | .NET SDK 10.x (pinned in `global.json`) | `dotnet build`, `dotnet test tests/Nethris.Tests/...` | everything |
-| Node LTS (20 or 22) + npm | `npm install` / `npm run build` / `npm run dev` in `client/` | the browser client |
+| Node 22.16 or later 22.x + npm (`client/package.json` `engines`) | `npm install` / `npm run build` / `npm run dev` in `client/` | the browser client |
 | Python 3.x + `pip install -r scripts/requirements-browser.txt` | `python scripts/check_api.py`, `python scripts/check_browser.py` | reproducing the black-box HTTP and browser evidence |
 | A Chromium browser | `scripts/check_browser.py` only | the browser tier |
 
@@ -30,7 +30,7 @@ Get-ChildItem -Path $env:TEMP -Filter 'nethris-*.sqlite*' -Recurse -ErrorAction 
 # Remove-Item <path>   # run only for files you have inspected
 ```
 
-The workshop's own database lives at `server/Nethris.Api/App_Data/nethris-learning.sqlite` (or wherever `Hris:Database` points). Deleting *that* resets the workshop, which is a legitimate way to start over - the test suites never touch it, because each one redirects `Hris:Database` to a temporary path.
+The workshop's own database lives at `App_Data/nethris-learning.sqlite` under the API's content root (`Program.cs:14`): `artifacts/App_Data/` for the packaged app, as the project README says, or `server/Nethris.Api/App_Data/` under `dotnet run --project server/Nethris.Api`. Set `Hris:Database` to put it somewhere else. Deleting *that* resets the workshop, which is a legitimate way to start over - the test suites never touch it, because each one redirects `Hris:Database` to a temporary path.
 
 **Time estimate (about 15-20 hours; this is the longest course in the set).**
 

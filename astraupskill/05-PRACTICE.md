@@ -58,46 +58,39 @@ If you do implement it, do so in a practice copy, and write the tests from crite
 For every exercise, finish with a short review note: problem, resulting behavior, files changed, tests run and limitations. That explanation is part of the engineering work.
 
 
-## Exercise 7 - Resolve an ETag conflict without losing the draft
+## Exercise 7 - Tighten the stale-edit review the client already has
 
-**Scenario.** Two HR users open the same employee. The first saves. The second saves a minute later with the `If-Match` value they loaded.
+**Start from what exists (checked 2026-10-06).** The basic conflict path is already implemented. A 409 on save sets `stale` (`client/src/Workshop.tsx:134`) and disables the form (line 164). The recovery panel (line 163) lists **every** field as `Saved: … · Draft: …` and offers one button, *Use latest version, keep draft*, which swaps in the latest row's ETag and keeps the typed values. `check_browser.py` covers this as "stale edit shows current values and preserves the draft for explicit review". Do not rebuild it. Improve it.
 
-**Build it.** In `client/`, make the conflict path a first-class state rather than an error toast.
+**Goal.** Make the review panel answer "what actually conflicts?" and give the user a real choice.
 
-**Acceptance criteria.**
+1. Show only the fields where the latest saved value differs from the draft, and mark fields the user never touched. To tell those apart you need the row the editor *opened* with. `editor.row` is replaced on recovery, so capture the original snapshot separately.
+2. Add a second explicit choice, *Discard my draft*, which loads the latest saved values into the editor. Neither choice may happen automatically.
+3. Keep it impossible to submit without an ETag. Explain which status the server would return (`HrisRequest.cs:44`, 428) and why the user could do nothing useful with it.
 
-1. A save that returns **409** leaves every field the user typed exactly as they typed it. Nothing is refetched over the top of it.
-2. The UI shows, side by side, the value the user is trying to save and the value the server now holds, field by field, for the fields that differ.
-3. The user has two explicit choices: *keep my version* (which re-sends with the current ETag after they confirm) and *discard mine* (which loads the server's version). Neither happens automatically.
-4. A save with no `If-Match` is impossible from the UI - if the client has no ETag it must re-read before offering a save button. Prove you understand why: what status would the server return, and what would the user be able to do about it?
-5. After a successful save the new ETag from the response is stored; a second save works without a reload.
-
-**Required tests.** Add an `ApiScenarioTests` case that performs the accepted-then-stale sequence and asserts `409` with the *response body's* code. Add a second asserting that the record's version advanced exactly once across the two attempts.
+**Check.** Run `python scripts/check_browser.py` after packaging. The existing stale-edit scenario must still pass. On the server side, `AnUpdateWithAStaleIfMatch_Is409` covers departments only. Add an `ApiScenarioTests` case for `employees/{id}` that does accepted-then-stale and asserts both the 409 and the body's `code`, which is `"conflict"` (`HrisRules.Version`, `Domain/HrisRules.cs:46-49`, throws `HrisError.Conflict`, `Domain/WorkshopModels.cs:42`). Then GET the row and assert its ETag version advanced exactly once.
 
 ## Exercise 8 - Prove the idempotency key does its job
 
-**Scenario.** A PTO request is submitted over a flaky connection. The response never arrives and the browser retries.
+**Start from what exists.** `operation()` (`client/src/workshopApi.ts:25-26`) creates one `crypto.randomUUID()` key per user attempt and freezes the method, path, body and ETag with it. The UI's exact-retry button resends that same `Operation`. The server side already has all three contract tests: `ARetryWithTheSameKeyAndBody_ReplaysTheStoredReceipt`, `ReusingAKeyForADifferentBody_Is409` and `AMutationWithoutAValidIdempotencyKey_IsRejected` (422).
 
-**Build it.** Make the client generate one `Idempotency-Key` per *attempt by the user* and reuse it for every automatic retry of that attempt, discarding it only when a response (success **or** failure) is received.
+**Goal.** Close the gap the course admits in `VERIFICATION.md`: reloading the page loses the pending `Operation`, even though the server still holds the receipt for 24 hours.
 
-**Acceptance criteria.**
+1. Persist the uncertain `Operation` (not the token) so that a reload can offer "retry the exact operation". Decide where it lives (`sessionStorage` vs `localStorage`) and when it is deleted: on any definite response, success **or** failure.
+2. Pressing submit after a *visible* error must still create a **new** key, because that is a new attempt.
+3. Editing the draft and retrying with the old key must still produce **409** (`HrisApi.Mutations.cs:73-76`). Say in one sentence why replaying the old receipt would be worse.
 
-1. Retrying after a lost response creates exactly one PTO request, and the second response carries `Idempotency-Replayed: true`.
-2. Pressing submit again after a *visible* error generates a **new** key, because that is a new attempt.
-3. Editing the form and submitting with the old key is refused with **409** (the fingerprint changed) rather than silently replaying the stale receipt. Say in one sentence why replaying would be worse than the error.
-4. The key survives a page reload if and only if the attempt does.
-
-**Required tests.** Port the three cases into `ApiScenarioTests`: replay with the same key and body, a changed body with the same key (409), and a missing or malformed key (422). Two of the three already exist - write the third yourself and make sure it fails before your change if you remove the guard.
+**Check.** Before you change anything, prove the existing guard is load-bearing. Temporarily delete the `Guid.TryParseExact` check (`HrisApi.Mutations.cs:23-26`) and run `dotnet test tests/Nethris.Tests/Nethris.Tests.csproj -c Release`. Exactly `AMutationWithoutAValidIdempotencyKey_IsRejected` should fail: the request is accepted with 201 under the empty key. Restore the check. For the reload feature, extend `check_browser.py`'s lost-response scenario: reload after the dropped response, sign in again, and assert one retry yields one department.
 
 ## Lab: red-first against the guards
 
-Before you trust any of the above, watch the suite catch each guard being removed. For each row, comment the guard out, **predict which test names go red**, run `dotnet test tests/Nethris.Tests/Nethris.Tests.csproj -c Release`, compare, and restore.
+Before you trust any of the above, watch the suite catch each guard being removed. For each row, disable the guard, **predict which test names go red**, run `dotnet test tests/Nethris.Tests/Nethris.Tests.csproj -c Release` (about six minutes), compare, and restore. Locations were checked on 2026-10-06. "Disable" sometimes means "replace", because a method that must return a value will not compile with its body commented out.
 
-| Guard to remove | In | Prediction to write down |
-|---|---|---|
-| The `Idempotency-Key` UUID check | `HrisApi.Handle` | Which tests fail: only the malformed-key one, or the replay ones too? |
-| The `If-Match` requirement (the 428 branch) | `HrisApi` precondition helper | Does the stale-conflict test still fail, or does it start passing for the wrong reason? |
-| The role minimum for `audit-logs` | `HrisApi.Handle` | Which of the three Employee-refusal tests notice? |
-| The session lookup during authentication | `HrisAuth.Require` | Does any test fail, or is revocable sign-out only covered by one? |
+| Guard to disable | Where | How to disable it so it still compiles | Prediction to write down |
+|---|---|---|---|
+| The `Idempotency-Key` UUID check | `HrisApi.Mutations.cs:23-26` | delete the `if` block | Only the malformed-key test, or the replay tests too? |
+| The `If-Match` requirement (the 428) | `HrisRequest.Expected`, `HrisRequest.cs:34-45` | replace the `throw` with `return 0;` | Does the stale-conflict test still pass? What status does the no-`If-Match` test now get? |
+| The role minimum for `audit-logs` | `MinimumRole`, `HrisApi.cs:134-137` | delete that `if` block | Which of the three Employee-refusal tests notice? |
+| Server-side session revocation | `HrisAuth.Logout`, `Security/HrisAuth.cs:74-75` | comment out the two-line `if` that deletes the session row | Does any test fail, or is revocable sign-out covered by only one? |
 
-The last row is the interesting one: if only a single test covers revocable sessions, the suite is one deletion away from silently losing that guarantee. Finding a hole like that is a better result than a clean sweep of predictions.
+The last row is the interesting one: if only a single test covers revocable sessions, the suite is one deletion away from silently losing that guarantee. Finding a hole like that is a better result than a clean sweep of predictions. Compare your predictions with the answers in [06](06-SOLUTIONS-AND-REVIEW.md#the-red-first-lab-reasoned-answers).

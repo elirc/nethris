@@ -5,7 +5,7 @@
 | Tool | Version used | Unlocks | Without it |
 |---|---|---|---|
 | .NET SDK 10.x (pinned in `global.json`) | targets `net10.0` | `dotnet build`, and `dotnet test tests/Nethris.Tests/...` - the foundation tests **plus the HTTP scenario tests** | nothing runs |
-| Node LTS (20 or 22) + npm | | `npm install`, `npm run build` and `npm run dev` in `client/` - a TypeScript and bundle check, not a test | you cannot build the browser client |
+| Node 22.16 or later 22.x + npm | `client/package.json` `engines`: `>=22.16.0 <23` | `npm install`, `npm run build` and `npm run dev` in `client/` - a TypeScript and bundle check, not a test | you cannot build the browser client |
 | Python 3.x + `pip install -r scripts/requirements-browser.txt` | | `python scripts/check_api.py` (the black-box HTTP suite against real Kestrel) and `python scripts/check_browser.py` (the browser workflows) | you lose the browser tier; the HTTP contract is still covered by `dotnet test` |
 | A Chromium browser | | `scripts/check_browser.py` only | the browser tier only |
 
@@ -71,10 +71,12 @@ When a regression fails, record the command, expected behavior, actual behavior 
 dotnet test tests/Nethris.Tests/Nethris.Tests.csproj -c Release
 ```
 
+Counted from the attributes on 2026-10-06: 13 + 15 = 28 cases, which matches the recorded run in `VERIFICATION.md`. Expect the run to take several minutes, mostly PBKDF2 password hashing during setup and sign-in.
+
 | Class | What it covers | Why at this level |
 |---|---|---|
-| `FoundationTests` | SQLite timestamp ordering, attached-approval insertion, exact quarter-hour and cents storage, and the other data-layer facts the change depends on | These are statements about EF and SQLite, not about HTTP. Testing them through a web request would make the failure harder to read, not easier. |
-| `ApiScenarioTests` | Setup and repeat-setup, unauthenticated and wrong-password sign-in, the idempotency contract (missing key, replay, key reuse), `If-Match` (428 and stale-conflict) with the strong ETag on reads, role-based refusals for an Employee, revocable sessions, pagination bounds, and a rejected write leaving no audit row | Every one of these is a statement about the *wire*: a status code, a header, or what a second request can observe. Only an HTTP test can make them. |
+| `FoundationTests` (11 methods = 10 `[Fact]` + 1 `[Theory]` with 3 `[InlineData]`, so 13 cases) | SQLite timestamp ordering, attached-approval insertion, exact quarter-hour and cents storage, and the other data-layer facts the change depends on | These are statements about EF and SQLite, not about HTTP. Testing them through a web request would make the failure harder to read, not easier. |
+| `ApiScenarioTests` (15 `[Fact]`) | Setup and repeat-setup, unauthenticated and wrong-password sign-in, the idempotency contract (missing key, replay, key reuse), `If-Match` (428 and stale-conflict) with the strong ETag on reads, role-based refusals for an Employee, revocable sessions, pagination bounds, and a rejected write leaving no audit row | Every one of these is a statement about the *wire*: a status code, a header, or what a second request can observe. Only an HTTP test can make them. |
 
 `ApiScenarioTests` uses `WebApplicationFactory<Program>`, which boots the real `Program.cs` in-process - the real middleware chain, the real JWT handler, the real EF/SQLite transaction per request - with no port, no `dotnet run` child process and no readiness polling. The database is redirected per test class:
 
